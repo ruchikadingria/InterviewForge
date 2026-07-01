@@ -1,7 +1,10 @@
 import { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -25,8 +28,14 @@ const LoginPage = () => {
         formData
       );
 
+      // Save JWT Token
       localStorage.setItem("token", response.data.token);
+
+      // Show Success Message
       setMessage(response.data.message);
+
+      // Navigate to Dashboard
+      navigate("/dashboard");
     } catch (error) {
       setMessage(error.response?.data?.message || "Something went wrong");
     }
@@ -40,23 +49,31 @@ const LoginPage = () => {
         <input
           type="email"
           name="email"
-          placeholder="Enter email"
+          placeholder="Enter Email"
           value={formData.email}
           onChange={handleChange}
         />
 
+        <br />
+        <br />
+
         <input
           type="password"
           name="password"
-          placeholder="Enter password"
+          placeholder="Enter Password"
           value={formData.password}
           onChange={handleChange}
         />
 
+        <br />
+        <br />
+
         <button type="submit">Login</button>
       </form>
 
-      <p>{message}</p>
+      <br />
+
+      {message && <p>{message}</p>}
     </div>
   );
 };
