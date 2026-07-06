@@ -13,7 +13,9 @@ const DashboardPage = () => {
       <h1>Welcome to InterviewForge</h1>
 
       <button onClick={() => navigate("/resume")}>Upload Resume</button>
-      <button>Start Mock Interview</button>
+      <button onClick={() => navigate("/interview/setup")}>
+        Start Mock Interview
+      </button>
       <button>Start DSA Assessment</button>
 
       <br />

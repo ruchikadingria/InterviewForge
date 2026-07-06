@@ -4,6 +4,7 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import cors from "cors";
 import resumeRoutes from "./routes/resumeRoutes.js";
+import interviewRoutes from "./routes/interviewRoutes.js";
 
 
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/resume", resumeRoutes);
+app.use("/api/interview", interviewRoutes);
 
 app.get("/", (req, res) => {
     res.send("hello word");
