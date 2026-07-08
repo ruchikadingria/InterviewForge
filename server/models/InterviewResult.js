@@ -1,54 +1,60 @@
 import mongoose from "mongoose";
 
-const interviewResultSchema = new mongoose.Schema({
+const interviewResultSchema = new mongoose.Schema(
+  {
     user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
 
-    role: {
-        type: String,
-        enum: ["Frontend", "Backend", "Fullstack", "DSA"],
-        required: true
+    interviewSession: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "InterviewSession",
+      required: true,
     },
 
-    mode: {
-        type: String,
-        enum: ["Text", "Voice"],
-        default: "Voice",
-        required: true
+    overallScore: {
+      type: Number,
+      required: true,
     },
 
-    score: {
-        type: Number,
-        required: true
+    technicalScore: {
+      type: Number,
+      required: true,
     },
 
-    questionsAnsweredWell: {
-        type: Number,
-        required: true
+    communicationScore: {
+      type: Number,
+      required: true,
     },
 
     strengths: {
-        type: [String],
-        default: []
+      type: [String],
+      default: [],
     },
 
     weaknesses: {
-        type: [String],
-        default: []
-
+      type: [String],
+      default: [],
     },
 
-    recommendations: {
-        type: [String],
-        default: []
+    suggestions: {
+      type: [String],
+      default: [],
     },
-},
-    {
-        timestamps: true,
-    }
-)
 
-export const InterviewResult = mongoose.model("InterviewResult", interviewResultSchema)
+    feedback: {
+      type: String,
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+export const InterviewResult = mongoose.model(
+  "InterviewResult",
+  interviewResultSchema
+);

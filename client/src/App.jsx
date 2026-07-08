@@ -6,6 +6,7 @@ import ResumePage from "./pages/ResumePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import InterviewSetupPage from "./pages/InterviewSetupPage";
 import InterviewSessionPage from "./pages/InterviewSessionPage";
+import InterviewResultPage from "./pages/InterviewResultPage";
 
 const App = () => {
   return (
@@ -46,6 +47,15 @@ const App = () => {
           element={
             <ProtectedRoute>
               <InterviewSessionPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/interview/result/:resultId"
+          element={
+            <ProtectedRoute>
+              <InterviewResultPage />
             </ProtectedRoute>
           }
         />
