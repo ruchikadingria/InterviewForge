@@ -156,3 +156,16 @@ export const fetchInterviewResult = async ({ userId, resultId }) => {
 
   return result;
 };
+
+export const fetchInterviewHistory = async ({ userId }) => {
+  const results = await InterviewResult.find({
+    user: userId,
+  })
+    .sort({ createdAt: -1 })
+    .select(
+      "overallScore technicalScore communicationScore strengths weaknesses suggestions feedback createdAt interviewSession"
+    )
+    .populate("interviewSession", "role mode status completedAt");
+
+  return results;
+};

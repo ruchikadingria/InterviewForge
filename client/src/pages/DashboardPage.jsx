@@ -12,16 +12,37 @@ const DashboardPage = () => {
     <div>
       <h1>Welcome to InterviewForge</h1>
 
-      <button onClick={() => navigate("/resume")}>Upload Resume</button>
+      <button onClick={() => navigate("/resume")}>
+        Upload Resume
+      </button>
+
+      <br />
+      <br />
+
       <button onClick={() => navigate("/interview/setup")}>
         Start Mock Interview
       </button>
-      <button>Start DSA Assessment</button>
 
       <br />
       <br />
 
-      <button onClick={handleLogout}>Logout</button>
+      <button onClick={() => navigate("/interview/history")}>
+        Interview History
+      </button>
+
+      <br />
+      <br />
+
+      <button>
+        Start DSA Assessment
+      </button>
+
+      <br />
+      <br />
+
+      <button onClick={handleLogout}>
+        Logout
+      </button>
     </div>
   );
 };

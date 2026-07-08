@@ -7,6 +7,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import InterviewSetupPage from "./pages/InterviewSetupPage";
 import InterviewSessionPage from "./pages/InterviewSessionPage";
 import InterviewResultPage from "./pages/InterviewResultPage";
+import InterviewHistoryPage from "./pages/InterviewHistoryPage";
 
 const App = () => {
   return (
@@ -56,6 +57,15 @@ const App = () => {
           element={
             <ProtectedRoute>
               <InterviewResultPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/interview/history"
+          element={
+            <ProtectedRoute>
+              <InterviewHistoryPage />
             </ProtectedRoute>
           }
         />
