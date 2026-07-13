@@ -8,6 +8,8 @@ import InterviewSetupPage from "./pages/InterviewSetupPage";
 import InterviewSessionPage from "./pages/InterviewSessionPage";
 import InterviewResultPage from "./pages/InterviewResultPage";
 import InterviewHistoryPage from "./pages/InterviewHistoryPage";
+import DSASetupPage from "./pages/DSASetupPage";
+
 
 const App = () => {
   return (
@@ -66,6 +68,15 @@ const App = () => {
           element={
             <ProtectedRoute>
               <InterviewHistoryPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dsa/setup"
+          element={
+            <ProtectedRoute>
+              <DSASetupPage />
             </ProtectedRoute>
           }
         />

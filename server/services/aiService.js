@@ -4,6 +4,13 @@ const sleep = (ms) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
+const cleanAIResponse = (text = "") => {
+  return text
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .trim();
+};
+
 const generateWithRetry = async ({ ai, prompt, retries = 3 }) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -60,12 +67,7 @@ Rules:
     prompt,
   });
 
-  let text = response.text;
-
-  text = text
-    .replace(/```json/g, "")
-    .replace(/```/g, "")
-    .trim();
+  const text = cleanAIResponse(response.text);
 
   return JSON.parse(text);
 };
@@ -126,12 +128,104 @@ Rules:
     prompt,
   });
 
-  let text = response.text;
-
-  text = text
-    .replace(/```json/g, "")
-    .replace(/```/g, "")
-    .trim();
+  const text = cleanAIResponse(response.text);
 
   return JSON.parse(text);
+};
+
+export const evaluateDSASolutions = async ({ language, solutions }) => {
+  const ai = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY,
+  });
+
+  const prompt = `
+You are an expert Data Structures and Algorithms interviewer and code reviewer.
+
+Evaluate the candidate's complete DSA assessment.
+
+Programming Language:
+${language}
+
+Questions and Submitted Solutions:
+${JSON.stringify(solutions, null, 2)}
+
+Evaluate every submitted solution based on:
+
+- Logical correctness
+- Suitability of the chosen approach
+- Time complexity
+- Space complexity
+- Code readability and quality
+- Handling of edge cases
+- Whether the solution appears complete
+- Whether the code is likely to compile
+
+Important:
+- The code is not being executed against actual test cases.
+- Do not claim that test cases passed.
+- Base correctness only on static code analysis.
+- Evaluate the questions in the same order in which they are provided.
+- Return exactly one question evaluation for every submitted solution.
+
+Return ONLY valid JSON in this exact format:
+
+{
+  "overallScore": 0,
+  "questionEvaluations": [
+    {
+      "score": 0,
+      "correctness": "",
+      "approach": "",
+      "timeComplexity": "",
+      "spaceComplexity": "",
+      "codeQuality": "",
+      "edgeCases": "",
+      "feedback": ""
+    }
+  ],
+  "strengths": [],
+  "weaknesses": [],
+  "suggestions": [],
+  "feedback": ""
+}
+
+Rules:
+- overallScore must be a number from 0 to 100.
+- Each question score must be a number from 0 to 100.
+- questionEvaluations must contain exactly ${solutions.length} objects.
+- Keep question evaluations in the same order as the supplied solutions.
+- correctness must explain whether the code logic appears correct.
+- approach must explain the algorithm used by the candidate.
+- timeComplexity must contain the expected time complexity.
+- spaceComplexity must contain the expected auxiliary space complexity.
+- codeQuality must briefly evaluate readability and structure.
+- edgeCases must explain whether important edge cases were handled.
+- feedback must contain concise and actionable comments.
+- strengths must be an array of strings.
+- weaknesses must be an array of strings.
+- suggestions must be an array of strings.
+- Do not include markdown.
+- Do not use code fences.
+- Do not include explanations outside the JSON object.
+`;
+
+  const response = await generateWithRetry({
+    ai,
+    prompt,
+  });
+
+  const text = cleanAIResponse(response.text);
+
+  const evaluation = JSON.parse(text);
+
+  if (
+    !Array.isArray(evaluation.questionEvaluations) ||
+    evaluation.questionEvaluations.length !== solutions.length
+  ) {
+    throw new Error(
+      "AI returned an invalid number of DSA question evaluations"
+    );
+  }
+
+  return evaluation;
 };

@@ -33,7 +33,7 @@ const DashboardPage = () => {
       <br />
       <br />
 
-      <button>
+      <button onClick={() => navigate("/dsa/setup")}>
         Start DSA Assessment
       </button>
 
