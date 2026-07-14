@@ -2,6 +2,7 @@ import { DSAQuestion } from "../models/DSAQuestion.js";
 import { DSASession } from "../models/DSASession.js";
 import { DSAResult } from "../models/DSAResult.js";
 import { evaluateDSASolutions } from "./aiService.js";
+import { executeCode } from "./pistonService.js";
 
 const getRandomQuestionByDifficulty = async (difficulty) => {
   const questions = await DSAQuestion.aggregate([
@@ -24,6 +25,31 @@ const getRandomQuestionByDifficulty = async (difficulty) => {
   return questions[0];
 };
 
+const getExpiryTime = (session) => {
+  return (
+    new Date(session.startedAt).getTime() +
+    session.durationMinutes * 60 * 1000
+  );
+};
+
+const checkAndExpireSession = async (session) => {
+  const expiryTime = getExpiryTime(session);
+
+  if (
+    Date.now() >= expiryTime &&
+    session.status === "in-progress"
+  ) {
+    session.status = "expired";
+    session.completedAt = new Date();
+
+    await session.save();
+
+    throw new Error("DSA assessment time has expired");
+  }
+
+  return expiryTime;
+};
+
 export const createDSASession = async ({ userId, language }) => {
   const supportedLanguages = ["cpp", "java", "python"];
 
@@ -42,12 +68,19 @@ export const createDSASession = async ({ userId, language }) => {
       sessionId: existingSession._id,
       language: existingSession.language,
       status: existingSession.status,
+      durationMinutes: existingSession.durationMinutes,
+      startedAt: existingSession.startedAt,
     };
   }
 
-  const easyQuestion = await getRandomQuestionByDifficulty("Easy");
-  const mediumQuestion = await getRandomQuestionByDifficulty("Medium");
-  const hardQuestion = await getRandomQuestionByDifficulty("Hard");
+  const easyQuestion =
+    await getRandomQuestionByDifficulty("Easy");
+
+  const mediumQuestion =
+    await getRandomQuestionByDifficulty("Medium");
+
+  const hardQuestion =
+    await getRandomQuestionByDifficulty("Hard");
 
   const selectedQuestions = [
     easyQuestion._id,
@@ -81,14 +114,28 @@ export const createDSASession = async ({ userId, language }) => {
   };
 };
 
-export const fetchDSASession = async ({ userId, sessionId }) => {
+export const fetchDSASession = async ({
+  userId,
+  sessionId,
+}) => {
   const session = await DSASession.findOne({
     _id: sessionId,
     user: userId,
   })
     .populate(
       "questions",
-      "leetcodeId title titleSlug difficulty tags problemStatement examples constraints hints starterCode"
+      [
+        "leetcodeId",
+        "title",
+        "titleSlug",
+        "difficulty",
+        "tags",
+        "problemStatement",
+        "examples",
+        "constraints",
+        "hints",
+        "starterCode",
+      ].join(" ")
     )
     .populate(
       "solutions.question",
@@ -99,13 +146,13 @@ export const fetchDSASession = async ({ userId, sessionId }) => {
     throw new Error("DSA assessment session not found");
   }
 
-  const expiryTime =
-    new Date(session.startedAt).getTime() +
-    session.durationMinutes * 60 * 1000;
-
+  const expiryTime = getExpiryTime(session);
   const remainingMilliseconds = expiryTime - Date.now();
 
-  if (remainingMilliseconds <= 0 && session.status === "in-progress") {
+  if (
+    remainingMilliseconds <= 0 &&
+    session.status === "in-progress"
+  ) {
     session.status = "expired";
     session.completedAt = new Date();
 
@@ -121,9 +168,13 @@ export const fetchDSASession = async ({ userId, sessionId }) => {
     durationMinutes: session.durationMinutes,
     startedAt: session.startedAt,
     completedAt: session.completedAt,
+
     remainingSeconds:
       session.status === "in-progress"
-        ? Math.max(0, Math.floor(remainingMilliseconds / 1000))
+        ? Math.max(
+            0,
+            Math.floor(remainingMilliseconds / 1000)
+          )
         : 0,
   };
 };
@@ -152,32 +203,27 @@ export const saveDSASolution = async ({
   }
 
   if (session.status !== "in-progress") {
-    throw new Error("This DSA assessment is no longer active");
+    throw new Error(
+      "This DSA assessment is no longer active"
+    );
   }
 
-  const expiryTime =
-    new Date(session.startedAt).getTime() +
-    session.durationMinutes * 60 * 1000;
-
-  if (Date.now() >= expiryTime) {
-    session.status = "expired";
-    session.completedAt = new Date();
-
-    await session.save();
-
-    throw new Error("DSA assessment time has expired");
-  }
+  await checkAndExpireSession(session);
 
   const questionAssigned = session.questions.some(
-    (question) => question.toString() === questionId.toString()
+    (question) =>
+      question.toString() === questionId.toString()
   );
 
   if (!questionAssigned) {
-    throw new Error("This question does not belong to the assessment");
+    throw new Error(
+      "This question does not belong to the assessment"
+    );
   }
 
   const solution = session.solutions.find(
-    (item) => item.question.toString() === questionId.toString()
+    (item) =>
+      item.question.toString() === questionId.toString()
   );
 
   if (!solution) {
@@ -196,13 +242,87 @@ export const saveDSASolution = async ({
   };
 };
 
-export const submitDSAAssessment = async ({ userId, sessionId }) => {
+export const runDSACode = async ({
+  userId,
+  sessionId,
+  questionId,
+  code,
+  stdin = "",
+}) => {
+  if (!questionId) {
+    throw new Error("Question ID is required");
+  }
+
+  if (!code || code.trim() === "") {
+    throw new Error("Code cannot be empty");
+  }
+
+  if (typeof stdin !== "string") {
+    throw new Error("Custom input must be a valid string");
+  }
+
+  const session = await DSASession.findOne({
+    _id: sessionId,
+    user: userId,
+  });
+
+  if (!session) {
+    throw new Error("DSA assessment session not found");
+  }
+
+  if (session.status !== "in-progress") {
+    throw new Error(
+      "This DSA assessment is no longer active"
+    );
+  }
+
+  await checkAndExpireSession(session);
+
+  const questionAssigned = session.questions.some(
+    (question) =>
+      question.toString() === questionId.toString()
+  );
+
+  if (!questionAssigned) {
+    throw new Error(
+      "This question does not belong to the assessment"
+    );
+  }
+
+  console.log(
+    `Executing ${session.language} code using Piston...`
+  );
+
+  const executionResult = await executeCode({
+    language: session.language,
+    sourceCode: code,
+    stdin,
+  });
+
+  console.log("Piston code execution completed");
+
+  return {
+    questionId,
+    ...executionResult,
+  };
+};
+
+export const submitDSAAssessment = async ({
+  userId,
+  sessionId,
+}) => {
   const session = await DSASession.findOne({
     _id: sessionId,
     user: userId,
   }).populate(
     "questions",
-    "title difficulty problemStatement examples constraints"
+    [
+      "title",
+      "difficulty",
+      "problemStatement",
+      "examples",
+      "constraints",
+    ].join(" ")
   );
 
   if (!session) {
@@ -223,24 +343,16 @@ export const submitDSAAssessment = async ({ userId, sessionId }) => {
   }
 
   if (session.status !== "in-progress") {
-    throw new Error("This DSA assessment is no longer active");
+    throw new Error(
+      "This DSA assessment is no longer active"
+    );
   }
 
-  const expiryTime =
-    new Date(session.startedAt).getTime() +
-    session.durationMinutes * 60 * 1000;
-
-  if (Date.now() >= expiryTime) {
-    session.status = "expired";
-    session.completedAt = new Date();
-
-    await session.save();
-
-    throw new Error("DSA assessment time has expired");
-  }
+  await checkAndExpireSession(session);
 
   const unansweredSolutions = session.solutions.filter(
-    (solution) => !solution.code || solution.code.trim() === ""
+    (solution) =>
+      !solution.code || solution.code.trim() === ""
   );
 
   if (unansweredSolutions.length > 0) {
@@ -249,21 +361,25 @@ export const submitDSAAssessment = async ({ userId, sessionId }) => {
     );
   }
 
-  const evaluationInput = session.questions.map((question) => {
-    const solution = session.solutions.find(
-      (item) => item.question.toString() === question._id.toString()
-    );
+  const evaluationInput = session.questions.map(
+    (question) => {
+      const solution = session.solutions.find(
+        (item) =>
+          item.question.toString() ===
+          question._id.toString()
+      );
 
-    return {
-      questionId: question._id,
-      title: question.title,
-      difficulty: question.difficulty,
-      problemStatement: question.problemStatement,
-      examples: question.examples,
-      constraints: question.constraints,
-      code: solution?.code || "",
-    };
-  });
+      return {
+        questionId: question._id,
+        title: question.title,
+        difficulty: question.difficulty,
+        problemStatement: question.problemStatement,
+        examples: question.examples,
+        constraints: question.constraints,
+        code: solution?.code || "",
+      };
+    }
+  );
 
   console.log("Calling Gemini for DSA evaluation...");
 
@@ -274,19 +390,20 @@ export const submitDSAAssessment = async ({ userId, sessionId }) => {
 
   console.log("Gemini DSA evaluation completed");
 
-  const questionEvaluations = evaluation.questionEvaluations.map(
-    (item, index) => ({
-      question: session.questions[index]._id,
-      score: item.score,
-      correctness: item.correctness,
-      approach: item.approach,
-      timeComplexity: item.timeComplexity,
-      spaceComplexity: item.spaceComplexity,
-      codeQuality: item.codeQuality,
-      edgeCases: item.edgeCases,
-      feedback: item.feedback,
-    })
-  );
+  const questionEvaluations =
+    evaluation.questionEvaluations.map(
+      (item, index) => ({
+        question: session.questions[index]._id,
+        score: item.score,
+        correctness: item.correctness,
+        approach: item.approach,
+        timeComplexity: item.timeComplexity,
+        spaceComplexity: item.spaceComplexity,
+        codeQuality: item.codeQuality,
+        edgeCases: item.edgeCases,
+        feedback: item.feedback,
+      })
+    );
 
   const result = await DSAResult.create({
     user: userId,
@@ -306,24 +423,41 @@ export const submitDSAAssessment = async ({ userId, sessionId }) => {
   await session.save();
 
   return {
-    message: "DSA assessment submitted and evaluated successfully",
+    message:
+      "DSA assessment submitted and evaluated successfully",
     status: session.status,
     resultId: result._id,
   };
 };
 
-export const fetchDSAResult = async ({ userId, resultId }) => {
+export const fetchDSAResult = async ({
+  userId,
+  resultId,
+}) => {
   const result = await DSAResult.findOne({
     _id: resultId,
     user: userId,
   })
     .populate(
       "dsaSession",
-      "language status startedAt completedAt durationMinutes"
+      [
+        "language",
+        "status",
+        "startedAt",
+        "completedAt",
+        "durationMinutes",
+      ].join(" ")
     )
     .populate(
       "questionEvaluations.question",
-      "leetcodeId title titleSlug difficulty tags problemStatement"
+      [
+        "leetcodeId",
+        "title",
+        "titleSlug",
+        "difficulty",
+        "tags",
+        "problemStatement",
+      ].join(" ")
     );
 
   if (!result) {
@@ -337,13 +471,29 @@ export const fetchDSAHistory = async ({ userId }) => {
   const results = await DSAResult.find({
     user: userId,
   })
-    .sort({ createdAt: -1 })
+    .sort({
+      createdAt: -1,
+    })
     .select(
-      "overallScore language strengths weaknesses suggestions feedback createdAt dsaSession"
+      [
+        "overallScore",
+        "language",
+        "strengths",
+        "weaknesses",
+        "suggestions",
+        "feedback",
+        "createdAt",
+        "dsaSession",
+      ].join(" ")
     )
     .populate(
       "dsaSession",
-      "status startedAt completedAt durationMinutes"
+      [
+        "status",
+        "startedAt",
+        "completedAt",
+        "durationMinutes",
+      ].join(" ")
     );
 
   return results;

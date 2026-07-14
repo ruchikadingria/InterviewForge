@@ -5,11 +5,12 @@ import {
   submitDSAAssessment,
   fetchDSAResult,
   fetchDSAHistory,
+  runDSACode,
 } from "../services/dsaService.js";
 
 export const startDSAAssessment = async (req, res) => {
   try {
-    const { language } = req.body;
+    const { language } = req.body || {};
 
     const result = await createDSASession({
       userId: req.user._id,
@@ -41,13 +42,33 @@ export const getDSASession = async (req, res) => {
 
 export const saveCode = async (req, res) => {
   try {
-    const { questionId, code } = req.body;
+    const { questionId, code } = req.body || {};
 
     const result = await saveDSASolution({
       userId: req.user._id,
       sessionId: req.params.sessionId,
       questionId,
       code,
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(400).json({
+      message: error.message,
+    });
+  }
+};
+
+export const runCode = async (req, res) => {
+  try {
+    const { questionId, code, stdin = "" } = req.body || {};
+
+    const result = await runDSACode({
+      userId: req.user._id,
+      sessionId: req.params.sessionId,
+      questionId,
+      code,
+      stdin,
     });
 
     res.status(200).json(result);

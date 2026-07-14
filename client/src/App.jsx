@@ -9,6 +9,7 @@ import InterviewSessionPage from "./pages/InterviewSessionPage";
 import InterviewResultPage from "./pages/InterviewResultPage";
 import InterviewHistoryPage from "./pages/InterviewHistoryPage";
 import DSASetupPage from "./pages/DSASetupPage";
+import DSASessionPage from "./pages/DSASessionPage";
 
 
 const App = () => {
@@ -77,6 +78,15 @@ const App = () => {
           element={
             <ProtectedRoute>
               <DSASetupPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dsa/session/:sessionId"
+          element={
+            <ProtectedRoute>
+              <DSASessionPage />
             </ProtectedRoute>
           }
         />
