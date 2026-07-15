@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import axios from "axios";
+import AppShell, { ErrorState, LoadingState } from "../components/AppShell";
 
 const LANGUAGE_CONFIG = {
   cpp: {
@@ -402,15 +403,15 @@ const DSASessionPage = () => {
   };
 
   if (loading) {
-    return <p>Loading DSA assessment...</p>;
+    return <LoadingState label="Preparing coding workspace..." />;
   }
 
   if (message && !session) {
-    return <p>{message}</p>;
+    return <ErrorState message={message} />;
   }
 
   if (!session || !activeQuestion) {
-    return <p>Assessment session not found.</p>;
+    return <ErrorState message="Assessment session not found." />;
   }
 
   const languageConfig =
@@ -419,27 +420,26 @@ const DSASessionPage = () => {
   const assessmentInactive = false;
 
   return (
-    <div>
-      <header>
-        <h1>DSA Assessment</h1>
+    <AppShell compact>
+    <div className="mx-auto w-full max-w-[1500px] px-4 py-5 sm:px-6">
+      <header className="mb-4 flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
+        <div><p className="eyebrow">Coding workspace</p><h1 className="font-display text-2xl">DSA Assessment</h1></div>
 
-        <p>
+        <div className="flex items-center gap-3"><p className="badge">
           Language: <strong>{languageConfig.label}</strong>
         </p>
 
-        <p>
+        <p className="rounded-sm bg-ink px-4 py-2 text-sm text-white">
           Time Remaining:{" "}
           <strong>{formatTime(remainingSeconds)}</strong>
-        </p>
+        </p></div>
       </header>
 
-      <hr />
-
-      <section>
-        <h2>Questions</h2>
+      <section className="mb-4 flex flex-wrap items-center gap-2">
+        <h2 className="mr-2 text-xs font-bold uppercase tracking-wider text-slate-400">Questions</h2>
 
         {session.questions.map((question, index) => (
-          <button
+          <button className={`btn min-h-9 px-3 py-1.5 ${index === activeQuestionIndex ? "btn-primary" : "btn-secondary"}`}
             key={question._id}
             onClick={() => handleQuestionChange(index)}
             disabled={
@@ -454,24 +454,22 @@ const DSASessionPage = () => {
         ))}
       </section>
 
-      <hr />
+      <main className="grid gap-4 xl:grid-cols-[minmax(340px,0.8fr)_minmax(600px,1.4fr)]">
+        <section className="card max-h-[calc(100vh-10rem)] overflow-y-auto">
+          <h2 className="font-display text-2xl">{activeQuestion.title}</h2>
 
-      <main>
-        <section>
-          <h2>{activeQuestion.title}</h2>
-
-          <p>
+          <p className="mt-2 text-sm text-slate-500">
             Difficulty:{" "}
             <strong>{activeQuestion.difficulty}</strong>
           </p>
 
           {activeQuestion.tags?.length > 0 && (
-            <p>Topics: {activeQuestion.tags.join(", ")}</p>
+            <p className="mt-2 text-sm text-slate-500">Topics: {activeQuestion.tags.join(", ")}</p>
           )}
 
-          <h3>Problem Statement</h3>
+          <h3 className="mt-7 border-b border-line pb-2 text-sm font-bold uppercase tracking-wider">Problem statement</h3>
 
-          <div
+          <div className="prose-copy mt-4"
             dangerouslySetInnerHTML={{
               __html: activeQuestion.problemStatement,
             }}
@@ -479,19 +477,19 @@ const DSASessionPage = () => {
 
           {activeQuestion.examples?.length > 0 && (
             <>
-              <h3>Examples</h3>
+              <h3 className="mt-7 border-b border-line pb-2 text-sm font-bold uppercase tracking-wider">Examples</h3>
 
               {activeQuestion.examples.map((example, index) => (
-                <pre key={index}>{example}</pre>
+                <pre className="mt-3 overflow-x-auto rounded-sm bg-slate-100 p-4 text-xs leading-6" key={index}>{example}</pre>
               ))}
             </>
           )}
 
           {activeQuestion.constraints?.length > 0 && (
             <>
-              <h3>Constraints</h3>
+              <h3 className="mt-7 border-b border-line pb-2 text-sm font-bold uppercase tracking-wider">Constraints</h3>
 
-              <ul>
+              <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-600">
                 {activeQuestion.constraints.map(
                   (constraint, index) => (
                     <li key={index}>{constraint}</li>
@@ -503,9 +501,9 @@ const DSASessionPage = () => {
 
           {activeQuestion.hints?.length > 0 && (
             <>
-              <h3>Hints</h3>
+              <h3 className="mt-7 border-b border-line pb-2 text-sm font-bold uppercase tracking-wider">Hints</h3>
 
-              <ul>
+              <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-600">
                 {activeQuestion.hints.map((hint, index) => (
                   <li key={index}>{hint}</li>
                 ))}
@@ -514,10 +512,8 @@ const DSASessionPage = () => {
           )}
         </section>
 
-        <hr />
-
-        <section>
-          <h2>Code Editor</h2>
+        <section className="overflow-hidden rounded-sm border border-slate-700 bg-[#1e1e1e] shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3 text-white"><h2 className="text-sm font-semibold">Solution · {languageConfig.label}</h2><span className="text-xs text-slate-400">Auto-saved on question change</span></div>
 
           <Editor
             height="500px"
@@ -538,11 +534,9 @@ const DSASessionPage = () => {
             }}
           />
 
-          <br />
+          <div className="border-t border-slate-700 p-4"><h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">Custom input</h3>
 
-          <h3>Custom Input</h3>
-
-          <textarea
+          <textarea className="w-full resize-y rounded-sm border border-slate-600 bg-[#151515] p-3 font-mono text-sm text-slate-100 outline-none focus:border-slate-400"
             rows="5"
             cols="60"
             placeholder="Enter input for your program..."
@@ -551,10 +545,7 @@ const DSASessionPage = () => {
             disabled={assessmentInactive}
           />
 
-          <br />
-          <br />
-
-          <button
+          <div className="mt-3 flex flex-wrap gap-2"><button className="btn border-slate-600 bg-transparent text-slate-200 hover:bg-slate-800"
             onClick={() => handleSaveCode()}
             disabled={
               savingQuestionId !== null ||
@@ -567,7 +558,7 @@ const DSASessionPage = () => {
               : "Save Code"}
           </button>
 
-          <button
+          <button className="btn border-slate-500 bg-slate-700 text-white hover:bg-slate-600"
             onClick={handleRunCode}
             disabled={
               runningQuestionId !== null ||
@@ -580,7 +571,7 @@ const DSASessionPage = () => {
               : "Run Code"}
           </button>
 
-          <button
+          <button className="btn ml-auto border-rust bg-rust text-white hover:bg-[#8e3f36]"
             onClick={handleSubmitAssessment}
             disabled={
               isSubmitting ||
@@ -592,13 +583,13 @@ const DSASessionPage = () => {
             {isSubmitting
               ? "Evaluating Assessment..."
               : "Submit Assessment"}
-          </button>
+          </button></div>
 
-          <h3>Console Output</h3>
+          <h3 className="mt-5 border-t border-slate-700 pt-4 text-xs font-bold uppercase tracking-wider text-slate-400">Console output</h3>
 
           <pre
             style={{
-              background: "#111827",
+              background: "#111111",
               color: "#f9fafb",
               padding: "16px",
               minHeight: "120px",
@@ -610,7 +601,7 @@ const DSASessionPage = () => {
           </pre>
 
           {activeExecution && !activeExecution.error && (
-            <div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-400 sm:grid-cols-4">
               <p>
                 Compile Time:{" "}
                 {activeExecution.compile?.wallTime !== null &&
@@ -637,12 +628,13 @@ const DSASessionPage = () => {
                 {activeExecution.run?.code ?? "N/A"}
               </p>
             </div>
-          )}
+          )}</div>
         </section>
       </main>
 
-      {message && <p>{message}</p>}
+      {message && <div className="notice notice-error mt-4">{message}</div>}
     </div>
+    </AppShell>
   );
 };
 

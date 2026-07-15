@@ -1,73 +1,11 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import AppShell from "../components/AppShell";
 
 const InterviewSetupPage = () => {
-  const navigate = useNavigate();
-
-  const [role, setRole] = useState("");
-  const [mode, setMode] = useState("");
-  const [message, setMessage] = useState("");
-
-  const handleStartInterview = async () => {
-    try {
-      if (!role || !mode) {
-        setMessage("Please select role and mode");
-        return;
-      }
-
-      const token = localStorage.getItem("token");
-
-      const response = await axios.post(
-        "http://localhost:8000/api/interview/start",
-        { role, mode },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      navigate(`/interview/session/${response.data.sessionId}`);
-      
-    } catch (error) {
-      setMessage(error.response?.data?.message || "Something went wrong");
-    }
-  };
-
-  return (
-    <div>
-      <h1>Start Mock Interview</h1>
-
-      <label>Select Role</label>
-      <br />
-      <select value={role} onChange={(e) => setRole(e.target.value)}>
-        <option value="">Choose Role</option>
-        <option value="Frontend">Frontend</option>
-        <option value="Backend">Backend</option>
-        <option value="Fullstack">Fullstack</option>
-        <option value="DSA">DSA</option>
-      </select>
-
-      <br />
-      <br />
-
-      <label>Select Mode</label>
-      <br />
-      <select value={mode} onChange={(e) => setMode(e.target.value)}>
-        <option value="">Choose Mode</option>
-        <option value="Text">Text</option>
-        <option value="Voice">Voice</option>
-      </select>
-
-      <br />
-      <br />
-
-      <button onClick={handleStartInterview}>Start Interview</button>
-
-      {message && <p>{message}</p>}
-    </div>
-  );
+  const navigate = useNavigate(); const [role, setRole] = useState(""); const [mode, setMode] = useState(""); const [message, setMessage] = useState(""); const [starting, setStarting] = useState(false);
+  const handleStartInterview = async () => { try { if (!role || !mode) { setMessage("Please select a role and mode."); return; } setStarting(true); setMessage(""); const token = localStorage.getItem("token"); const response = await axios.post("http://localhost:8000/api/interview/start", { role, mode }, { headers: { Authorization: `Bearer ${token}` } }); navigate(`/interview/session/${response.data.sessionId}`); } catch (error) { setMessage(error.response?.data?.message || "Something went wrong"); } finally { setStarting(false); } };
+  return <AppShell><main className="page-container max-w-4xl"><div className="page-header"><div><p className="eyebrow">Mock interview</p><h1 className="page-title">Set up your session</h1><p className="page-copy">Choose the role and format that best match the interview you are preparing for.</p></div><button className="btn btn-secondary" onClick={() => navigate("/dashboard")}>← Dashboard</button></div><div className="grid gap-6 md:grid-cols-[1fr_280px]"><section className="card space-y-6"><div><label className="field-label" htmlFor="role">Target role</label><select className="field" id="role" value={role} onChange={(e) => setRole(e.target.value)}><option value="">Choose a role</option><option value="Frontend">Frontend developer</option><option value="Backend">Backend developer</option><option value="Fullstack">Full-stack developer</option><option value="DSA">Data structures & algorithms</option></select></div><div><label className="field-label" htmlFor="mode">Interview format</label><div className="grid grid-cols-2 gap-3">{["Text", "Voice"].map((value) => <button key={value} className={`rounded-sm border p-4 text-left transition ${mode === value ? "border-navy bg-slate-50 ring-1 ring-navy" : "border-line bg-white hover:border-slate-400"}`} onClick={() => setMode(value)}><strong className="block text-sm">{value}</strong><span className="mt-1 block text-xs text-slate-500">{value === "Text" ? "Write considered answers" : "Practice speaking aloud"}</span></button>)}</div></div>{message && <div className="notice notice-error">{message}</div>}<button className="btn btn-primary w-full sm:w-auto" onClick={handleStartInterview} disabled={starting}>{starting ? "Preparing session..." : "Begin interview →"}</button></section><aside className="card bg-[#f1eee5]"><p className="eyebrow">Before you begin</p><ol className="space-y-5 text-sm leading-6 text-slate-600"><li><strong className="block text-ink">Find a quiet space</strong>Give the session your full attention.</li><li><strong className="block text-ink">Answer naturally</strong>Clear thinking matters more than perfect wording.</li><li><strong className="block text-ink">Review the report</strong>Use the feedback to guide your next session.</li></ol></aside></div></main></AppShell>;
 };
-
 export default InterviewSetupPage;

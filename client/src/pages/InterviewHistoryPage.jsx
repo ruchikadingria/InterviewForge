@@ -1,87 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import AppShell, { ErrorState, LoadingState } from "../components/AppShell";
 
 const InterviewHistoryPage = () => {
-  const navigate = useNavigate();
-
-  const [history, setHistory] = useState([]);
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const token = localStorage.getItem("token");
-
-        const response = await axios.get(
-          "http://localhost:8000/api/interview/history",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setHistory(response.data);
-      } catch (error) {
-        setMessage(error.response?.data?.message || "Something went wrong");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHistory();
-  }, []);
-
-  if (loading) {
-    return <p>Loading interview history...</p>;
-  }
-
-  if (message) {
-    return <p>{message}</p>;
-  }
-
-  return (
-    <div>
-      <h1>Interview History</h1>
-
-      <button onClick={() => navigate("/dashboard")}>Back to Dashboard</button>
-
-      <br />
-      <br />
-
-      {history.length === 0 ? (
-        <p>No interviews found. Start your first mock interview.</p>
-      ) : (
-        history.map((result) => (
-          <div key={result._id}>
-            <h2>{result.interviewSession?.role || "Interview"}</h2>
-
-            <p>Mode: {result.interviewSession?.mode}</p>
-            <p>Overall Score: {result.overallScore}/100</p>
-            <p>Technical Score: {result.technicalScore}/100</p>
-            <p>Communication Score: {result.communicationScore}/100</p>
-
-            <p>
-              Date:{" "}
-              {new Date(result.createdAt).toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </p>
-
-            <button onClick={() => navigate(`/interview/result/${result._id}`)}>
-              View Report
-            </button>
-
-            <hr />
-          </div>
-        ))
-      )}
-    </div>
-  );
+  const navigate = useNavigate(); const [history, setHistory] = useState([]); const [message, setMessage] = useState(""); const [loading, setLoading] = useState(true);
+  useEffect(() => { const fetchHistory = async () => { try { const token = localStorage.getItem("token"); const response = await axios.get("http://localhost:8000/api/interview/history", { headers: { Authorization: `Bearer ${token}` } }); setHistory(response.data); } catch (error) { setMessage(error.response?.data?.message || "Something went wrong"); } finally { setLoading(false); } }; fetchHistory(); }, []);
+  if (loading) return <LoadingState label="Loading interview history..." />; if (message) return <ErrorState message={message} />;
+  return <AppShell><main className="page-container"><div className="page-header"><div><p className="eyebrow">Progress archive</p><h1 className="page-title">Interview history</h1><p className="page-copy">Review previous sessions, compare scores, and decide what to practice next.</p></div><div className="flex gap-2"><button className="btn btn-secondary" onClick={() => navigate("/dashboard")}>← Dashboard</button><button className="btn btn-primary" onClick={() => navigate("/interview/setup")}>New interview</button></div></div>{history.length === 0 ? <div className="card py-16 text-center"><p className="font-display text-2xl">Your archive is empty</p><p className="mt-2 text-sm text-slate-500">Complete your first mock interview to see it here.</p><button className="btn btn-primary mt-6" onClick={() => navigate("/interview/setup")}>Start an interview</button></div> : <div className="space-y-3">{history.map((result, index) => <article className="card grid items-center gap-5 sm:grid-cols-[56px_1fr_auto]" key={result._id}><span className="font-display text-3xl text-slate-300">{String(history.length - index).padStart(2, "0")}</span><div><div className="flex flex-wrap items-center gap-2"><h2 className="font-display text-xl">{result.interviewSession?.role || "Interview"}</h2><span className="badge">{result.interviewSession?.mode || "Text"}</span></div><p className="mt-2 text-sm text-slate-500">{new Date(result.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p><div className="mt-4 flex flex-wrap gap-5 text-sm"><span>Overall <strong>{result.overallScore}/100</strong></span><span>Technical <strong>{result.technicalScore}/100</strong></span><span>Communication <strong>{result.communicationScore}/100</strong></span></div></div><button className="btn btn-secondary" onClick={() => navigate(`/interview/result/${result._id}`)}>View report →</button></article>)}</div>}</main></AppShell>;
 };
-
 export default InterviewHistoryPage;

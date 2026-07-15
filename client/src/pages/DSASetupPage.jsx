@@ -1,91 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import AppShell from "../components/AppShell";
 
 const DSASetupPage = () => {
-  const navigate = useNavigate();
-
-  const [language, setLanguage] = useState("cpp");
-  const [message, setMessage] = useState("");
-  const [isStarting, setIsStarting] = useState(false);
-
-  const handleStartAssessment = async () => {
-    try {
-      setIsStarting(true);
-      setMessage("");
-
-      const token = localStorage.getItem("token");
-
-      const response = await axios.post(
-        "http://localhost:8000/api/dsa/start",
-        {
-          language,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      navigate(`/dsa/session/${response.data.sessionId}`);
-    } catch (error) {
-      setMessage(
-        error.response?.data?.message ||
-          "Unable to start DSA assessment"
-      );
-    } finally {
-      setIsStarting(false);
-    }
-  };
-
-  return (
-    <div>
-      <h1>DSA Assessment Setup</h1>
-
-      <p>
-        You will receive three coding problems: one Easy, one Medium, and one
-        Hard.
-      </p>
-
-      <p>Total duration: 90 minutes</p>
-
-      <label htmlFor="language">Select Programming Language</label>
-
-      <br />
-      <br />
-
-      <select
-        id="language"
-        value={language}
-        onChange={(event) => setLanguage(event.target.value)}
-      >
-        <option value="cpp">C++</option>
-        <option value="java">Java</option>
-        <option value="python">Python</option>
-      </select>
-
-      <br />
-      <br />
-
-      <button
-        onClick={handleStartAssessment}
-        disabled={isStarting}
-      >
-        {isStarting ? "Starting Assessment..." : "Start Assessment"}
-      </button>
-
-      <br />
-      <br />
-
-      <button onClick={() => navigate("/dashboard")}>
-        Back to Dashboard
-      </button>
-
-      {message && <p>{message}</p>}
-    </div>
-  );
+  const navigate = useNavigate(); const [language, setLanguage] = useState("cpp"); const [message, setMessage] = useState(""); const [isStarting, setIsStarting] = useState(false);
+  const handleStartAssessment = async () => { try { setIsStarting(true); setMessage(""); const token = localStorage.getItem("token"); const response = await axios.post("http://localhost:8000/api/dsa/start", { language }, { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }); navigate(`/dsa/session/${response.data.sessionId}`); } catch (error) { setMessage(error.response?.data?.message || "Unable to start DSA assessment"); } finally { setIsStarting(false); } };
+  const languages = [{ value: "cpp", label: "C++", note: "Performance and control" }, { value: "java", label: "Java", note: "Structured and portable" }, { value: "python", label: "Python", note: "Concise and expressive" }];
+  return <AppShell><main className="page-container max-w-4xl"><div className="page-header"><div><p className="eyebrow">Coding assessment</p><h1 className="page-title">Choose your language</h1><p className="page-copy">One easy, one medium, and one hard problem. You will have 90 minutes for all three.</p></div><button className="btn btn-secondary" onClick={() => navigate("/dashboard")}>← Dashboard</button></div><section className="card"><div className="mb-7 grid grid-cols-3 divide-x divide-line border-y border-line py-4 text-center"><div><strong className="font-display text-2xl">3</strong><span className="block text-xs text-slate-500">Problems</span></div><div><strong className="font-display text-2xl">90</strong><span className="block text-xs text-slate-500">Minutes</span></div><div><strong className="font-display text-2xl">100</strong><span className="block text-xs text-slate-500">Points</span></div></div><label className="field-label">Programming language</label><div className="grid gap-3 sm:grid-cols-3">{languages.map((item) => <button key={item.value} className={`rounded-sm border p-4 text-left transition ${language === item.value ? "border-navy bg-slate-50 ring-1 ring-navy" : "border-line hover:border-slate-400"}`} onClick={() => setLanguage(item.value)}><strong className="block">{item.label}</strong><span className="mt-1 block text-xs text-slate-500">{item.note}</span></button>)}</div>{message && <div className="notice notice-error mt-5">{message}</div>}<div className="mt-7 flex justify-end"><button className="btn btn-primary" onClick={handleStartAssessment} disabled={isStarting}>{isStarting ? "Preparing assessment..." : "Start 90-minute assessment →"}</button></div></section></main></AppShell>;
 };
-
 export default DSASetupPage;

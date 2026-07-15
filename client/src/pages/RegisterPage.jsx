@@ -1,93 +1,19 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import AppShell from "../components/AppShell";
+import GoogleAuthButton from "../components/GoogleAuthButton";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
-
+  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
   const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const handleGoogleSuccess = useCallback(() => navigate("/dashboard"), [navigate]);
+  const handleGoogleError = useCallback((errorMessage) => setMessage(errorMessage), []);
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleSubmit = async (e) => { e.preventDefault(); try { setSubmitting(true); setMessage(""); const response = await axios.post("http://localhost:8000/api/auth/register", formData); localStorage.setItem("token", response.data.token); navigate("/dashboard"); } catch (error) { setMessage(error.response?.data?.message || "Something went wrong"); } finally { setSubmitting(false); } };
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      const response = await axios.post(
-        "http://localhost:8000/api/auth/register",
-        formData
-      );
-
-      // Save JWT token
-      localStorage.setItem("token", response.data.token);
-
-      // Show success message
-      setMessage(response.data.message);
-
-      // Navigate to Dashboard
-      navigate("/dashboard");
-    } catch (error) {
-      setMessage(error.response?.data?.message || "Something went wrong");
-    }
-  };
-
-  return (
-    <div>
-      <h1>Register</h1>
-
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="name"
-          placeholder="Enter Name"
-          value={formData.name}
-          onChange={handleChange}
-        />
-
-        <br />
-        <br />
-
-        <input
-          type="email"
-          name="email"
-          placeholder="Enter Email"
-          value={formData.email}
-          onChange={handleChange}
-        />
-
-        <br />
-        <br />
-
-        <input
-          type="password"
-          name="password"
-          placeholder="Enter Password"
-          value={formData.password}
-          onChange={handleChange}
-        />
-
-        <br />
-        <br />
-
-        <button type="submit">Register</button>
-      </form>
-
-      <br />
-
-      {message && <p>{message}</p>}
-    </div>
-  );
+  return <AppShell compact><main className="mx-auto grid min-h-[calc(100vh-8rem)] max-w-6xl items-center gap-12 px-5 py-12 sm:px-8 lg:grid-cols-2 lg:px-10"><section className="hidden lg:block"><p className="eyebrow">Start your preparation</p><h1 className="max-w-lg font-display text-5xl leading-[1.08] text-ink">A stronger interview starts with honest practice.</h1><div className="mt-8 grid max-w-md grid-cols-3 border-y border-line py-5 text-center"><div><strong className="block font-display text-2xl">3</strong><span className="text-xs text-slate-500">Difficulty levels</span></div><div className="border-x border-line"><strong className="block font-display text-2xl">2</strong><span className="text-xs text-slate-500">Practice modes</span></div><div><strong className="block font-display text-2xl">1</strong><span className="text-xs text-slate-500">Clear report</span></div></div></section><section className="mx-auto w-full max-w-md"><div className="card p-6 sm:p-6"><p className="eyebrow">Join InterviewForge</p><h1 className="page-title">Create your account</h1><p className="page-copy mb-7">Set up your practice desk in a minute.</p><GoogleAuthButton context="signup" onAuthenticated={handleGoogleSuccess} onError={handleGoogleError} /><div className="my-6 flex items-center gap-3"><span className="h-px flex-1 bg-line" /><span className="text-xs font-semibold uppercase tracking-wider text-slate-400">or use email</span><span className="h-px flex-1 bg-line" /></div><form className="space-y-5" onSubmit={handleSubmit}><div><label className="field-label" htmlFor="name">Full name</label><input className="field" id="name" name="name" placeholder="Your name" value={formData.name} onChange={handleChange} required /></div><div><label className="field-label" htmlFor="email">Email address</label><input className="field" id="email" type="email" name="email" placeholder="you@example.com" value={formData.email} onChange={handleChange} required /></div><div><label className="field-label" htmlFor="password">Password</label><input className="field" id="password" type="password" name="password" placeholder="Create a password" value={formData.password} onChange={handleChange} minLength="6" required /></div>{message && <div className="notice notice-error">{message}</div>}<button className="btn btn-primary w-full" type="submit" disabled={submitting}>{submitting ? "Creating account..." : "Create account"}</button></form><p className="mt-6 text-center text-sm text-slate-600">Already have an account? <button className="font-semibold text-navy underline underline-offset-4" onClick={() => navigate("/login")}>Sign in</button></p></div></section></main></AppShell>;
 };
-
 export default RegisterPage;

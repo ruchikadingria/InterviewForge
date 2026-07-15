@@ -1,61 +1,11 @@
 import { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import AppShell from "../components/AppShell";
 
 const ResumePage = () => {
-  const [resume, setResume] = useState(null);
-  const [message, setMessage] = useState("");
-
-  const handleFileChange = (e) => {
-    setResume(e.target.files[0]);
-  };
-
-  const handleUpload = async () => {
-    try {
-      if (!resume) {
-        setMessage("Please select a PDF file");
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("resume", resume);
-
-      const token = localStorage.getItem("token");
-
-      const response = await axios.post(
-        "http://localhost:8000/api/resume/upload",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      setMessage(response.data.message);
-    } catch (error) {
-      setMessage(error.response?.data?.message || "Something went wrong");
-    }
-  };
-
-  return (
-    <div>
-      <h1>Upload Resume</h1>
-
-      <input
-        type="file"
-        accept="application/pdf"
-        onChange={handleFileChange}
-      />
-
-      <br />
-      <br />
-
-      <button onClick={handleUpload}>Upload</button>
-
-      <p>{message}</p>
-    </div>
-  );
+  const navigate = useNavigate(); const [resume, setResume] = useState(null); const [message, setMessage] = useState(""); const [uploading, setUploading] = useState(false);
+  const handleUpload = async () => { try { if (!resume) { setMessage("Please select a PDF file"); return; } setUploading(true); setMessage(""); const formData = new FormData(); formData.append("resume", resume); const token = localStorage.getItem("token"); const response = await axios.post("http://localhost:8000/api/resume/upload", formData, { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } }); setMessage(response.data.message); } catch (error) { setMessage(error.response?.data?.message || "Something went wrong"); } finally { setUploading(false); } };
+  return <AppShell><main className="page-container max-w-4xl"><div className="page-header"><div><p className="eyebrow">Resume desk</p><h1 className="page-title">Keep your profile current</h1><p className="page-copy">Upload the resume you are applying with. PDF format keeps the layout and content reliable.</p></div><button className="btn btn-secondary" onClick={() => navigate("/dashboard")}>← Dashboard</button></div><div className="card"><label className="group flex min-h-64 cursor-pointer flex-col items-center justify-center border border-dashed border-slate-300 bg-slate-50/60 p-8 text-center hover:border-navy hover:bg-slate-50"><span className="grid size-12 place-items-center rounded-full border border-line bg-white text-2xl text-navy">↑</span><strong className="mt-4 text-base">{resume ? resume.name : "Choose your resume"}</strong><span className="mt-2 text-sm text-slate-500">PDF only · click to browse</span><input className="sr-only" type="file" accept="application/pdf" onChange={(e) => { setResume(e.target.files[0]); setMessage(""); }} /></label>{message && <div className={`notice mt-5 ${message.toLowerCase().includes("success") || message.toLowerCase().includes("uploaded") ? "notice-success" : "notice-error"}`}>{message}</div>}<div className="mt-5 flex justify-end"><button className="btn btn-primary" onClick={handleUpload} disabled={uploading}>{uploading ? "Uploading..." : "Upload resume"}</button></div></div></main></AppShell>;
 };
-
 export default ResumePage;

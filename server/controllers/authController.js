@@ -1,4 +1,4 @@
-import { registerUser, loginUser } from "../services/authService.js";
+import { authenticateWithGoogle, registerUser, loginUser } from "../services/authService.js";
 
 export const register = async (req, res) => {
   try {
@@ -28,6 +28,15 @@ export const login = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+};
+
+export const googleAuth = async (req, res) => {
+  try {
+    const result = await authenticateWithGoogle(req.body.credential);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(401).json({ message: error.message });
   }
 };
 

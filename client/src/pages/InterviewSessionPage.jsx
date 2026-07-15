@@ -1,126 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
+import AppShell, { ErrorState, LoadingState } from "../components/AppShell";
 
 const InterviewSessionPage = () => {
-  const { sessionId } = useParams();
-  const navigate = useNavigate();
-
-  const [session, setSession] = useState(null);
-  const [answer, setAnswer] = useState("");
-  const [message, setMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    const fetchSession = async () => {
-      try {
-        const token = localStorage.getItem("token");
-
-        const response = await axios.get(
-          `http://localhost:8000/api/interview/${sessionId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setSession(response.data);
-      } catch (error) {
-        setMessage(error.response?.data?.message || "Something went wrong");
-      }
-    };
-
-    fetchSession();
-  }, [sessionId]);
-
-  const handleSubmitAnswer = async () => {
-    if (!answer.trim()) {
-      setMessage("Please enter your answer before continuing.");
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      setMessage("");
-
-      const token = localStorage.getItem("token");
-
-      const response = await axios.post(
-        `http://localhost:8000/api/interview/${sessionId}/answer`,
-        { answer },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data.status === "completed" && response.data.resultId) {
-        navigate(`/interview/result/${response.data.resultId}`);
-        return;
-      }
-
-      setSession((prev) => ({
-        ...prev,
-        currentQuestion: response.data.currentQuestion,
-        status: response.data.status,
-      }));
-
-      setAnswer("");
-      setMessage(response.data.message);
-    } catch (error) {
-      setMessage(error.response?.data?.message || "Something went wrong");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (message && !session) {
-    return <p>{message}</p>;
-  }
-
-  if (!session) {
-    return <p>Loading interview session...</p>;
-  }
-
-  const currentQuestionText = session.questions[session.currentQuestion];
-
-  return (
-    <div>
-      <h1>Interview Session</h1>
-
-      <p>Role: {session.role}</p>
-      <p>Mode: {session.mode}</p>
-
-      <h2>
-        Question {session.currentQuestion + 1} of {session.questions.length}
-      </h2>
-
-      <p>{currentQuestionText}</p>
-
-      <textarea
-        rows="6"
-        cols="60"
-        placeholder="Type your answer here..."
-        value={answer}
-        onChange={(e) => setAnswer(e.target.value)}
-      />
-
-      <br />
-      <br />
-
-      <button onClick={handleSubmitAnswer} disabled={isSubmitting}>
-        {isSubmitting
-          ? "Submitting..."
-          : session.currentQuestion + 1 === session.questions.length
-          ? "Finish Interview"
-          : "Save & Next"}
-      </button>
-
-      {message && <p>{message}</p>}
-    </div>
-  );
+  const { sessionId } = useParams(); const navigate = useNavigate(); const [session, setSession] = useState(null); const [answer, setAnswer] = useState(""); const [message, setMessage] = useState(""); const [isSubmitting, setIsSubmitting] = useState(false);
+  useEffect(() => { const fetchSession = async () => { try { const token = localStorage.getItem("token"); const response = await axios.get(`http://localhost:8000/api/interview/${sessionId}`, { headers: { Authorization: `Bearer ${token}` } }); setSession(response.data); } catch (error) { setMessage(error.response?.data?.message || "Something went wrong"); } }; fetchSession(); }, [sessionId]);
+  const handleSubmitAnswer = async () => { if (!answer.trim()) { setMessage("Please enter your answer before continuing."); return; } try { setIsSubmitting(true); setMessage(""); const token = localStorage.getItem("token"); const response = await axios.post(`http://localhost:8000/api/interview/${sessionId}/answer`, { answer }, { headers: { Authorization: `Bearer ${token}` } }); if (response.data.status === "completed" && response.data.resultId) { navigate(`/interview/result/${response.data.resultId}`); return; } setSession((prev) => ({ ...prev, currentQuestion: response.data.currentQuestion, status: response.data.status })); setAnswer(""); setMessage(response.data.message); } catch (error) { setMessage(error.response?.data?.message || "Something went wrong"); } finally { setIsSubmitting(false); } };
+  if (message && !session) return <ErrorState message={message} />; if (!session) return <LoadingState label="Preparing your interview..." />;
+  const current = session.currentQuestion + 1; const total = session.questions.length; const currentQuestionText = session.questions[session.currentQuestion];
+  return <AppShell compact><main className="page-container max-w-5xl"><header className="mb-7 flex flex-wrap items-center justify-between gap-4 border-b border-line pb-5"><div><p className="eyebrow">Live interview</p><h1 className="font-display text-2xl">{session.role} · {session.mode}</h1></div><div className="text-right"><strong className="block text-sm">Question {current} of {total}</strong><div className="mt-2 h-1.5 w-36 overflow-hidden rounded-full bg-slate-200"><div className="h-full bg-rust" style={{ width: `${(current / total) * 100}%` }} /></div></div></header><div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_240px]"><section className="card p-7 sm:p-9"><span className="font-display text-5xl text-slate-200">{String(current).padStart(2, "0")}</span><h2 className="mt-4 font-display text-2xl leading-snug sm:text-3xl">{currentQuestionText}</h2><label className="field-label mt-8" htmlFor="answer">Your answer</label><textarea className="field min-h-56 resize-y leading-7" id="answer" placeholder="Think through your response, then write it here..." value={answer} onChange={(e) => setAnswer(e.target.value)} />{message && <div className={`notice mt-4 ${message.toLowerCase().includes("please") || message.toLowerCase().includes("wrong") ? "notice-error" : "notice-success"}`}>{message}</div>}<div className="mt-5 flex justify-end"><button className="btn btn-primary" onClick={handleSubmitAnswer} disabled={isSubmitting}>{isSubmitting ? "Submitting..." : current === total ? "Finish interview →" : "Save & next →"}</button></div></section><aside className="card h-fit bg-[#f1eee5]"><p className="eyebrow">Answer note</p><p className="text-sm leading-6 text-slate-600">Use a clear structure. State the context, explain your reasoning, and finish with the outcome or trade-off.</p><div className="mt-5 border-t border-line pt-5 text-xs leading-5 text-slate-500">Your answer is saved when you continue to the next question.</div></aside></div></main></AppShell>;
 };
-
 export default InterviewSessionPage;

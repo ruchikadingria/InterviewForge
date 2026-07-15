@@ -1,77 +1,14 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
+import AppShell, { ErrorState, LoadingState } from "../components/AppShell";
 
+const ListCard = ({ title, items, tone }) => <section className="card"><div className={`mb-4 h-1 w-10 ${tone}`} /><h2 className="font-display text-xl">{title}</h2>{items?.length ? <ul className="mt-4 space-y-3">{items.map((item, index) => <li className="flex gap-3 text-sm leading-6 text-slate-600" key={index}><span className="mt-2 size-1.5 shrink-0 rounded-full bg-slate-400" />{item}</li>)}</ul> : <p className="mt-3 text-sm text-slate-500">No notes provided.</p>}</section>;
 const InterviewResultPage = () => {
-  const { resultId } = useParams();
-
-  const [result, setResult] = useState(null);
-  const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    const fetchResult = async () => {
-      try {
-        const token = localStorage.getItem("token");
-
-        const response = await axios.get(
-          `http://localhost:8000/api/interview/result/${resultId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setResult(response.data);
-      } catch (error) {
-        setMessage(error.response?.data?.message || "Something went wrong");
-      }
-    };
-
-    fetchResult();
-  }, [resultId]);
-
-  if (message) {
-    return <p>{message}</p>;
-  }
-
-  if (!result) {
-    return <p>Loading interview result...</p>;
-  }
-
-  return (
-    <div>
-      <h1>Interview Result</h1>
-
-      <h2>Overall Score: {result.overallScore}/100</h2>
-      <p>Technical Score: {result.technicalScore}/100</p>
-      <p>Communication Score: {result.communicationScore}/100</p>
-
-      <h3>Strengths</h3>
-      <ul>
-        {result.strengths.map((item, index) => (
-          <li key={index}>{item}</li>
-        ))}
-      </ul>
-
-      <h3>Weaknesses</h3>
-      <ul>
-        {result.weaknesses.map((item, index) => (
-          <li key={index}>{item}</li>
-        ))}
-      </ul>
-
-      <h3>Suggestions</h3>
-      <ul>
-        {result.suggestions.map((item, index) => (
-          <li key={index}>{item}</li>
-        ))}
-      </ul>
-
-      <h3>Feedback</h3>
-      <p>{result.feedback}</p>
-    </div>
-  );
+  const { resultId } = useParams(); const navigate = useNavigate(); const [result, setResult] = useState(null); const [message, setMessage] = useState("");
+  useEffect(() => { const fetchResult = async () => { try { const token = localStorage.getItem("token"); const response = await axios.get(`http://localhost:8000/api/interview/result/${resultId}`, { headers: { Authorization: `Bearer ${token}` } }); setResult(response.data); } catch (error) { setMessage(error.response?.data?.message || "Something went wrong"); } }; fetchResult(); }, [resultId]);
+  if (message) return <ErrorState message={message} />; if (!result) return <LoadingState label="Preparing your interview report..." />;
+  const scores = [{ label: "Overall", value: result.overallScore }, { label: "Technical", value: result.technicalScore }, { label: "Communication", value: result.communicationScore }];
+  return <AppShell><main className="page-container"><div className="page-header"><div><p className="eyebrow">Session report</p><h1 className="page-title">Interview performance</h1><p className="page-copy">A practical summary of what worked and where to focus next.</p></div><div className="flex gap-2"><button className="btn btn-secondary" onClick={() => navigate("/interview/history")}>View history</button><button className="btn btn-primary" onClick={() => navigate("/interview/setup")}>Practice again</button></div></div><section className="card mb-5 grid divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">{scores.map((score) => <div className="py-5 text-center first:pt-0 last:pb-0 sm:py-2" key={score.label}><span className="block text-xs font-bold uppercase tracking-widest text-slate-400">{score.label}</span><strong className="mt-2 block font-display text-4xl font-normal">{score.value}<small className="text-lg text-slate-400">/100</small></strong></div>)}</section><div className="grid gap-5 lg:grid-cols-3"><ListCard title="Strengths" items={result.strengths} tone="bg-emerald-600" /><ListCard title="Areas to improve" items={result.weaknesses} tone="bg-rust" /><ListCard title="Next steps" items={result.suggestions} tone="bg-navy" /></div><section className="card mt-5"><p className="eyebrow">Interviewer’s note</p><h2 className="section-title">Overall feedback</h2><p className="mt-4 max-w-4xl text-sm leading-7 text-slate-600">{result.feedback || "No overall feedback was provided."}</p></section></main></AppShell>;
 };
-
 export default InterviewResultPage;
