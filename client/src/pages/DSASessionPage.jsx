@@ -416,8 +416,7 @@ const DSASessionPage = () => {
   const languageConfig =
     LANGUAGE_CONFIG[session.language] || LANGUAGE_CONFIG.cpp;
 
-  const assessmentInactive =
-    session.status !== "in-progress" || remainingSeconds <= 0;
+  const assessmentInactive = false;
 
   return (
     <div>

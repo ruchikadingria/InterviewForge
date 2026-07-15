@@ -40,6 +40,13 @@ const DashboardPage = () => {
       <br />
       <br />
 
+      <button onClick={() => navigate("/dsa/history")}>
+        DSA Assessment History
+      </button>
+
+      <br />
+      <br />
+
       <button onClick={handleLogout}>
         Logout
       </button>

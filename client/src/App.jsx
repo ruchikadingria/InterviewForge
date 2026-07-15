@@ -10,6 +10,8 @@ import InterviewResultPage from "./pages/InterviewResultPage";
 import InterviewHistoryPage from "./pages/InterviewHistoryPage";
 import DSASetupPage from "./pages/DSASetupPage";
 import DSASessionPage from "./pages/DSASessionPage";
+import DSAResultPage from "./pages/DSAResultPage";
+import DSAHistoryPage from "./pages/DSAHistoryPage";
 
 
 const App = () => {
@@ -87,6 +89,24 @@ const App = () => {
           element={
             <ProtectedRoute>
               <DSASessionPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dsa/result/:resultId"
+          element={
+            <ProtectedRoute>
+              <DSAResultPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dsa/history"
+          element={
+            <ProtectedRoute>
+              <DSAHistoryPage />
             </ProtectedRoute>
           }
         />
