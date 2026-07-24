@@ -45,33 +45,46 @@ export const executeCode = async ({
 
   const baseUrl = getPistonBaseUrl();
 
-  const response = await fetch(`${baseUrl}/execute`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      language: config.language,
-      version: config.version,
+  let response;
 
-      files: [
-        {
-          name: config.fileName,
-          content: sourceCode,
-        },
-      ],
+  try {
+    response = await fetch(`${baseUrl}/execute`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        language: config.language,
+        version: config.version,
 
-      stdin,
+        files: [
+          {
+            name: config.fileName,
+            content: sourceCode,
+          },
+        ],
 
-      compile_timeout: 30000,
-      compile_cpu_time: 30000,
-      run_timeout: 3000,
-      run_cpu_time: 3000,
+        stdin,
 
-      compile_memory_limit: -1,
-      run_memory_limit: -1,
-    }),
-  });
+        compile_timeout: 60000,
+        compile_cpu_time: 60000,
+        run_timeout: 5000,
+        run_cpu_time: 5000,
+
+        compile_memory_limit: -1,
+        run_memory_limit: -1,
+      }),
+    });
+  } catch (error) {
+    const reason =
+      error.cause?.code ||
+      error.cause?.message ||
+      error.message;
+
+    throw new Error(
+      `Unable to connect to Piston at ${baseUrl}: ${reason}`
+    );
+  }
 
   const data = await response.json();
 

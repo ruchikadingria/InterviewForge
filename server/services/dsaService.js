@@ -57,20 +57,27 @@ export const createDSASession = async ({ userId, language }) => {
     throw new Error("Please select a valid programming language");
   }
 
-  const existingSession = await DSASession.findOne({
+  let existingSession = await DSASession.findOne({
     user: userId,
     status: "in-progress",
   });
 
   if (existingSession) {
-    return {
-      message: "Existing DSA assessment session found",
-      sessionId: existingSession._id,
-      language: existingSession.language,
-      status: existingSession.status,
-      durationMinutes: existingSession.durationMinutes,
-      startedAt: existingSession.startedAt,
-    };
+    if (Date.now() >= getExpiryTime(existingSession)) {
+      existingSession.status = "expired";
+      existingSession.completedAt = new Date();
+      await existingSession.save();
+      existingSession = null;
+    } else {
+      return {
+        message: "Existing DSA assessment session found",
+        sessionId: existingSession._id,
+        language: existingSession.language,
+        status: existingSession.status,
+        durationMinutes: existingSession.durationMinutes,
+        startedAt: existingSession.startedAt,
+      };
+    }
   }
 
   const easyQuestion =

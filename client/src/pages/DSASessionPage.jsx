@@ -358,6 +358,18 @@ const DSASessionPage = () => {
       return `Execution Error:\n${activeExecution.error}`;
     }
 
+    const compileDetails = [
+      activeExecution.compile?.stderr,
+      activeExecution.compile?.message,
+      activeExecution.compile?.output,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    if (/time limit exceeded|timed? out|timeout/i.test(compileDetails)) {
+      return `Compilation Timed Out:\n${compileDetails}`;
+    }
+
     if (activeExecution.compile?.stderr) {
       return `Compilation Error:\n${activeExecution.compile.stderr}`;
     }
@@ -374,6 +386,18 @@ const DSASessionPage = () => {
       activeExecution.compile?.code !== 0
     ) {
       return `Compilation Output:\n${activeExecution.compile.output}`;
+    }
+
+    const runDetails = [
+      activeExecution.run?.stderr,
+      activeExecution.run?.message,
+      activeExecution.run?.output,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    if (/time limit exceeded|timed? out|timeout/i.test(runDetails)) {
+      return `Execution Timed Out:\n${runDetails}`;
     }
 
     if (activeExecution.run?.stderr) {
@@ -417,7 +441,8 @@ const DSASessionPage = () => {
   const languageConfig =
     LANGUAGE_CONFIG[session.language] || LANGUAGE_CONFIG.cpp;
 
-  const assessmentInactive = false;
+  const assessmentInactive =
+    session.status !== "in-progress" || remainingSeconds <= 0;
 
   return (
     <AppShell compact>
@@ -434,6 +459,18 @@ const DSASessionPage = () => {
           <strong>{formatTime(remainingSeconds)}</strong>
         </p></div>
       </header>
+
+      {assessmentInactive && (
+        <div className="notice notice-error mb-4 flex flex-wrap items-center justify-between gap-3">
+          <span>This assessment is {session.status === "completed" ? "completed" : "expired"}. Start a new assessment to run code.</span>
+          <button
+            className="btn btn-secondary"
+            onClick={() => navigate("/dsa/setup")}
+          >
+            Start New Assessment
+          </button>
+        </div>
+      )}
 
       <section className="mb-4 flex flex-wrap items-center gap-2">
         <h2 className="mr-2 text-xs font-bold uppercase tracking-wider text-slate-400">Questions</h2>

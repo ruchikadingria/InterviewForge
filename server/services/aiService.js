@@ -34,6 +34,114 @@ const generateWithRetry = async ({ ai, prompt, retries = 3 }) => {
   }
 };
 
+const getDSAEvaluationSchema = (solutionCount) => ({
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "overallScore",
+    "questionEvaluations",
+    "strengths",
+    "weaknesses",
+    "suggestions",
+    "feedback",
+  ],
+  properties: {
+    overallScore: {
+      type: "number",
+      minimum: 0,
+      maximum: 100,
+    },
+    questionEvaluations: {
+      type: "array",
+      minItems: solutionCount,
+      maxItems: solutionCount,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "score",
+          "correctness",
+          "approach",
+          "timeComplexity",
+          "spaceComplexity",
+          "codeQuality",
+          "edgeCases",
+          "feedback",
+        ],
+        properties: {
+          score: {
+            type: "number",
+            minimum: 0,
+            maximum: 100,
+          },
+          correctness: { type: "string" },
+          approach: { type: "string" },
+          timeComplexity: { type: "string" },
+          spaceComplexity: { type: "string" },
+          codeQuality: { type: "string" },
+          edgeCases: { type: "string" },
+          feedback: { type: "string" },
+        },
+      },
+    },
+    strengths: {
+      type: "array",
+      items: { type: "string" },
+    },
+    weaknesses: {
+      type: "array",
+      items: { type: "string" },
+    },
+    suggestions: {
+      type: "array",
+      items: { type: "string" },
+    },
+    feedback: { type: "string" },
+  },
+});
+
+const generateDSAEvaluationWithRetry = async ({
+  ai,
+  prompt,
+  solutionCount,
+  retries = 3,
+}) => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseJsonSchema: getDSAEvaluationSchema(solutionCount),
+          maxOutputTokens: 8192,
+        },
+      });
+
+      const evaluation = JSON.parse(cleanAIResponse(response.text));
+
+      if (
+        !Array.isArray(evaluation.questionEvaluations) ||
+        evaluation.questionEvaluations.length !== solutionCount
+      ) {
+        throw new Error("Invalid number of question evaluations");
+      }
+
+      return evaluation;
+    } catch (error) {
+      console.log(`Gemini DSA Evaluation Attempt ${attempt} Failed`);
+
+      if (attempt === retries) {
+        throw new Error(
+          "Unable to evaluate the assessment right now. Please submit again."
+        );
+      }
+
+      await sleep(2000);
+    }
+  }
+};
+
 export const generateInterviewQuestions = async ({ resumeText, role }) => {
   const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY,
@@ -209,23 +317,11 @@ Rules:
 - Do not include explanations outside the JSON object.
 `;
 
-  const response = await generateWithRetry({
+  const evaluation = await generateDSAEvaluationWithRetry({
     ai,
     prompt,
+    solutionCount: solutions.length,
   });
-
-  const text = cleanAIResponse(response.text);
-
-  const evaluation = JSON.parse(text);
-
-  if (
-    !Array.isArray(evaluation.questionEvaluations) ||
-    evaluation.questionEvaluations.length !== solutions.length
-  ) {
-    throw new Error(
-      "AI returned an invalid number of DSA question evaluations"
-    );
-  }
 
   return evaluation;
 };
